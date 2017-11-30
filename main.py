@@ -50,4 +50,4 @@ if __name__ == '__main__':
     # 評価
     if os.path.exists('clf.pkl'):
         clf = resume_model(model_name)
-        eval_model(clf, './data/test_data.csv')
+        print(eval_model(clf, './data/test_data.csv'))
