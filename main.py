@@ -1,5 +1,7 @@
 import numpy as np
 from sklearn.tree import DecisionTreeClassifier
+from sklearn.linear_model import SGDClassifier
+from sklearn.svm import SVC
 import os
 
 import preprocessing
@@ -39,14 +41,25 @@ if __name__ == '__main__':
         preprocessing.write_data(data)
 
     # 学習
-    if not os.path.exists('clf.pkl'):
-        train_X, train_y = train_data('./data/train_data.csv')
-        clf = DecisionTreeClassifier()
-        clf.fit(train_X, train_y)
-        save_model(clf, model_name)
+    train_X, train_y = train_data('./data/train_data.csv')
+
+    # decision tree
+    decision_tree_clf = DecisionTreeClassifier()
+    decision_tree_clf.fit(train_X, train_y)
+    # save_model(decision_tree_clf, 'decision_tree.pkl')
+
+    # SGDClassifier
+    sgdclassifier_clf = SGDClassifier()
+    sgdclassifier_clf.fit(train_X, train_y)
+    # save_model(sgdclassifier_clf, 'sgdclassifier.pkl')
+
+    # SVM
+    svm_clf = SVC()
+    svm_clf.fit(train_X, train_y)
+    # save_model(svm_clf, 'svm.pkl')
 
     # 評価
-    if os.path.exists('clf.pkl'):
-        clf = resume_model(model_name)
-        test_X, test_y = train_data('./data/test_data.csv')
-        print(clf.score(test_X, test_y))
+    test_X, test_y = train_data('./data/test_data.csv')
+    print('SGDClassifier', decision_tree_clf.score(test_X, test_y))
+    print('DecisionTreeClassifier', sgdclassifier_clf.score(test_X, test_y))
+    print('SVM', svm_clf.score(test_X, test_y))

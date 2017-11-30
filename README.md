@@ -6,5 +6,7 @@ scikit-learnを使用し、アルゴリズムは決定木(DecisionTreeClassifier
 ## 結果
 ```
 [mute@localhost bitcoin-prediction-py (master)]$ python main.py
-0.4610169491525424
+SGDClassifier 0.494915254237
+DecisionTreeClassifier 0.583050847458
+SVM 0.583050847458
 ```
