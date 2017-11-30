@@ -1,6 +1,4 @@
 # Timestamp,Open,High,Low,Close,Volume_(BTC),Volume_(Currency),Weighted_Price
-# TODO: 移動平均線など他の数値もデータに含める
-# 1日ごとに丸める -> テクニカル分析の数値を計算 -> csv吐き出し
 
 import datetime
 import csv
