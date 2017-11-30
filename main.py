@@ -2,21 +2,19 @@ import numpy as np
 from sklearn.tree import DecisionTreeClassifier
 import os
 
-import eval_model
 import preprocessing
 from read_csv import read_csv
 from model import save_model, resume_model
-from eval_model import eval_model
 import utils
 
 filename = './data/preprocessed_data_2014-10-31_to_2017-10-20.csv'
 model_name = 'clf.pkl'
 
-def train_data():
+def train_data(filename):
     train_X = []
     train_y = []
 
-    return_index = utils.get_return_index('./data/train_data.csv')
+    return_index = utils.get_return_index(filename)
 
     # 30日分ずらした配列を作成する
     days = 30
@@ -42,7 +40,7 @@ if __name__ == '__main__':
 
     # 学習
     if not os.path.exists('clf.pkl'):
-        train_X, train_y = train_data()
+        train_X, train_y = train_data('./data/train_data.csv')
         clf = DecisionTreeClassifier()
         clf.fit(train_X, train_y)
         save_model(clf, model_name)
@@ -50,4 +48,5 @@ if __name__ == '__main__':
     # 評価
     if os.path.exists('clf.pkl'):
         clf = resume_model(model_name)
-        print(eval_model(clf, './data/test_data.csv'))
+        test_X, test_y = train_data('./data/test_data.csv')
+        print(clf.score(test_X, test_y))
