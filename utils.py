@@ -7,7 +7,7 @@ def get_prices(ary):
             'low': int(ary[2]),
             'close': int(ary[3])}
 
-def get_return_index(filename):
+def get_closes(filename):
     data = read_csv(filename)
 
     closes = []
@@ -15,9 +15,4 @@ def get_return_index(filename):
     for i in data:
         closes.append(get_prices(i)['close'])
 
-    returns = pd.Series(closes).pct_change()
-    ret_index = (1 + returns).cumprod()
-    ret_index[0] = 1
-
-    return ret_index
-
+    return pd.Series(closes)

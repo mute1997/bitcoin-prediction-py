@@ -1,7 +1,10 @@
 import numpy as np
-from sklearn.tree import DecisionTreeClassifier
-from sklearn.linear_model import SGDClassifier
+from sklearn.neural_network import MLPClassifier
+from sklearn import grid_search
 from sklearn.svm import SVC
+from sklearn import preprocessing as sk_pp
+from sklearn.metrics import classification_report
+from sklearn.metrics import accuracy_score
 import os
 
 import preprocessing
@@ -16,23 +19,29 @@ def train_data(filename):
     train_X = []
     train_y = []
 
-    return_index = utils.get_return_index(filename)
+    # return_index = utils.get_return_index(filename)
+    closes = utils.get_closes(filename)
+    return_index = (1 + closes.pct_change()).cumprod()
+    return_index[0] = 1
 
-    # 30日分ずらした配列を作成する
-    days = 30
-    for i in range(0, int(len(return_index))-days):
-        feature = return_index.ix[i:i+days-1]
-        if len(feature) != days:
-            break
+    preproced_closes = sk_pp.scale(closes)
 
-        train_X.append(feature.values)
-        # 上がったら1, 下がったら0
-        if feature.values[-1] < return_index[i+days]:
+    # days分のデータからpredict_days後にrise_price以上上がっているかを学習する
+    days = 6 # days - 1日分のデータ
+    predict_days = 6 # predict_days + 1日後の予測
+
+    rise_price = 1000
+    for i in range(0, int(len(return_index))-days-predict_days):
+        train_X.append(preproced_closes[i:i+days-1])
+        if closes[i+days-1] + rise_price < closes[i+days+predict_days]:
+            # rise price円以上上がったら1
             train_y.append(1)
         else:
+            # 同じか上がってないなら0
             train_y.append(0)
 
     return np.array(train_X), np.array(train_y)
+
 
 if __name__ == '__main__':
     # 前処理
@@ -41,25 +50,26 @@ if __name__ == '__main__':
         preprocessing.write_data(data)
 
     # 学習
+    # parameters = {'hidden_layer_sizes': [(100,), (100, 10), (100, 100, 10), (1000, 100, 100, 10)]}
     train_X, train_y = train_data('./data/train_data.csv')
-
-    # decision tree
-    decision_tree_clf = DecisionTreeClassifier()
-    decision_tree_clf.fit(train_X, train_y)
-    # save_model(decision_tree_clf, 'decision_tree.pkl')
-
-    # SGDClassifier
-    sgdclassifier_clf = SGDClassifier()
-    sgdclassifier_clf.fit(train_X, train_y)
-    # save_model(sgdclassifier_clf, 'sgdclassifier.pkl')
-
-    # SVM
-    svm_clf = SVC()
-    svm_clf.fit(train_X, train_y)
-    # save_model(svm_clf, 'svm.pkl')
-
-    # 評価
     test_X, test_y = train_data('./data/test_data.csv')
-    print('SGDClassifier', decision_tree_clf.score(test_X, test_y))
-    print('DecisionTreeClassifier', sgdclassifier_clf.score(test_X, test_y))
-    print('SVM', svm_clf.score(test_X, test_y))
+
+    epoch_count = 0
+    clf = MLPClassifier(max_iter=1)
+    while(True):
+        # clf = grid_search.GridSearchCV(MLPClassifier(), parameters)
+        clf.fit(train_X, train_y)
+        r = clf.score(test_X, test_y)
+        epoch_count += 1
+        if epoch_count % 10 == 0:
+            print('loop ' + str(epoch_count) + ' times')
+        if r >= 0.6:
+            save_model(clf, model_name)
+            break
+
+    clf = resume_model(model_name)
+    print('correct_data', test_y)
+    print('predict', clf.predict(test_X))
+    # print(classification_report(test_y, clf.predict(test_X)))
+    print('MLPClassifier', clf.score(test_X, test_y))
+    # print('eval', clf.predict([sk_pp.scale([1285054, 1302136, 1324606, 1562165, 2222165, 1889398])]))
