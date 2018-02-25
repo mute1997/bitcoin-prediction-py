@@ -1,12 +1,9 @@
 # bitcoinの価格推移予測
-
-scikit-learnを使用し、アルゴリズムはDecisionTreeClassifier, SGDClassifier, SVM。  
-データはここから利用し(https://www.kaggle.com/mczielinski/bitcoin-historical-data )、`coincheckJPY`のデータを使用する。
+cryptowatchのAPIを使い、15分ごとのデータを用いて学習させた。  
 
 ## 結果
 ```
-[mute@localhost bitcoin-prediction-py (master)]$ python main.py
-SGDClassifier 0.494915254237
-DecisionTreeClassifier 0.583050847458
-SVM 0.583050847458
+[~/bitcoin-prediction-py]$ python main.py                                                                      [master]
+Scores:  [ 0.54545455  0.54545455  0.55555556  0.55555556  0.55555556]
+Accuracy: 0.55 (+/- 0.01)
 ```

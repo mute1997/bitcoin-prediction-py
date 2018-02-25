@@ -60,5 +60,5 @@ if __name__ == '__main__':
     clf.fit(train_X, train_y)
 
     scores = cross_val_score(clf, train_features, train_labels, cv=5)
-    print(scores)
+    print("Scores: ", scores)
     print("Accuracy: %0.2f (+/- %0.2f)" % (scores.mean(), scores.std() * 2))
