@@ -5,6 +5,7 @@ import numpy as np
 from sklearn import preprocessing
 from sklearn.neural_network import MLPClassifier
 from sklearn.model_selection import cross_val_score
+from sklearn.model_selection import train_test_split
 
 from model import save_model, resume_model
 
@@ -46,33 +47,18 @@ def get_train_data():
 
     return np.array(train_X), np.array(train_y)
 
-def get_data_and_split():
-    X, y = get_train_data()
-    ratio = 0.8
-
-    train_X = X[0:int(len(X) * ratio)]
-    train_y = y[0:int(len(y) * ratio)]
-    test_X = X[int(len(X) * ratio):]
-    test_y = y[int(len(y) * ratio):]
-
-    return np.array(train_X), np.array(train_y), np.array(test_X), np.array(test_y)
-
 
 if __name__ == '__main__':
-    train_X, train_y, test_X, test_y = get_data_and_split()
-
-    clf = MLPClassifier()
-    clf.fit(train_X, train_y)
-
-    print('MLPClassifier: %0.2f' % clf.score(test_X, test_y))
-    # print('eval', clf.predict([preprocessing.scale([1285054, 1302136, 1324606, 1562165, 2222165, 1889398])]))
-
     # ----------------------------------------------------
     # 汎化性能を求める
     # これを参考にスコア算出 -> (https://qiita.com/Lewuathe/items/09d07d3ff366e0dd6b24)
     # ----------------------------------------------------
     train_features, train_labels = get_train_data()
+    train_X, test_X, train_y, test_y = train_test_split(train_features, train_labels, test_size=0.2, random_state=0)
+
+    clf = MLPClassifier()
+    clf.fit(train_X, train_y)
+
     scores = cross_val_score(clf, train_features, train_labels, cv=5)
     print(scores)
     print("Accuracy: %0.2f (+/- %0.2f)" % (scores.mean(), scores.std() * 2))
-    # ----------------------------------------------------
