@@ -1,75 +1,78 @@
+import json
+
+import pandas
 import numpy as np
+from sklearn import preprocessing
 from sklearn.neural_network import MLPClassifier
-from sklearn import grid_search
-from sklearn.svm import SVC
-from sklearn import preprocessing as sk_pp
-from sklearn.metrics import classification_report
-from sklearn.metrics import accuracy_score
-import os
+from sklearn.model_selection import cross_val_score
 
-import preprocessing
-from read_csv import read_csv
 from model import save_model, resume_model
-import utils
 
-filename = './data/preprocessed_data_2014-10-31_to_2017-10-20.csv'
+filename = 'bitflyer.json'
 model_name = 'clf.pkl'
 
-def train_data(filename):
+def get_return_index(prices):
+    return_index = []
+    return_index = (1 + pandas.Series(prices).pct_change()).cumprod()
+    return_index[0] = 1
+    return return_index
+
+# 取得したデータのAPIドキュメント
+# https://cryptowatch.jp/docs/api#ohlc
+def get_train_data():
     train_X = []
     train_y = []
 
-    # return_index = utils.get_return_index(filename)
-    closes = utils.get_closes(filename)
-    return_index = (1 + closes.pct_change()).cumprod()
-    return_index[0] = 1
+    # APIのURLとデータ構造
+    # https://api.cryptowat.ch/markets/bitflyer/btcjpy/ohlc?periods=900
+    # [ CloseTime, OpenPrice, HighPrice, LowPrice, ClosePrice, Volume ]
+    order_book_data = json.load(open(filename, 'r'))
 
-    preproced_closes = sk_pp.scale(closes)
+    # 終値のみを取り出す
+    prices = []
+    for value in order_book_data['result']['900']:
+        prices.append(value[1])
 
-    # days分のデータからpredict_days後にrise_price以上上がっているかを学習する
-    days = 6 # days - 1日分のデータ
-    predict_days = 6 # predict_days + 1日後の予測
+    # pricesをreturn indexにする
+    return_index = get_return_index(prices)
 
-    rise_price = 1000
-    for i in range(0, int(len(return_index))-days-predict_days):
-        train_X.append(preproced_closes[i:i+days-1])
-        if closes[i+days-1] + rise_price < closes[i+days+predict_days]:
-            # rise price円以上上がったら1
-            train_y.append(1)
-        else:
-            # 同じか上がってないなら0
-            train_y.append(0)
+    # データの生成
+    input_amount = 10
+    for index in range(0, len(return_index) - input_amount, input_amount):
+        x = return_index[index:index+input_amount].tolist()
+        y = 1 if x[-1] < return_index[index+input_amount+1] else 0 # 上がってたら1, 下がってる or 同じだったら0
+        train_X.append(x)
+        train_y.append(y)
 
     return np.array(train_X), np.array(train_y)
 
+def get_data_and_split():
+    X, y = get_train_data()
+    ratio = 0.8
+
+    train_X = X[0:int(len(X) * ratio)]
+    train_y = y[0:int(len(y) * ratio)]
+    test_X = X[int(len(X) * ratio):]
+    test_y = y[int(len(y) * ratio):]
+
+    return np.array(train_X), np.array(train_y), np.array(test_X), np.array(test_y)
+
 
 if __name__ == '__main__':
-    # 前処理
-    if not os.path.exists('./data/train_data.csv') and not os.path.exists('./data/test_data.csv'):
-        data = preprocessing.round_data()
-        preprocessing.write_data(data)
+    train_X, train_y, test_X, test_y = get_data_and_split()
 
-    # 学習
-    # parameters = {'hidden_layer_sizes': [(100,), (100, 10), (100, 100, 10), (1000, 100, 100, 10)]}
-    train_X, train_y = train_data('./data/train_data.csv')
-    test_X, test_y = train_data('./data/test_data.csv')
+    clf = MLPClassifier()
+    clf.fit(train_X, train_y)
 
-    epoch_count = 0
-    clf = MLPClassifier(max_iter=1)
-    while(True):
-        # clf = grid_search.GridSearchCV(MLPClassifier(), parameters)
-        clf.fit(train_X, train_y)
-        r = clf.score(test_X, test_y)
-        epoch_count += 1
-        if epoch_count % 10 == 0:
-            print('loop ' + str(epoch_count) + ' times')
-        if r >= 0.6:
-            save_model(clf, model_name)
-            break
+    print('MLPClassifier: %0.2f' % clf.score(test_X, test_y))
+    # print('eval', clf.predict([preprocessing.scale([1285054, 1302136, 1324606, 1562165, 2222165, 1889398])]))
 
-    clf = resume_model(model_name)
-    print('correct_data', test_y)
-    print('predict', clf.predict(test_X))
-    # print(classification_report(test_y, clf.predict(test_X)))
-    print('MLPClassifier', clf.score(test_X, test_y))
-    # print('eval', clf.predict([sk_pp.scale([1285054, 1302136, 1324606, 1562165, 2222165, 1889398])]))
+    # ----------------------------------------------------
+    # 汎化性能を求める
+    # これを参考にスコア算出 -> (https://qiita.com/Lewuathe/items/09d07d3ff366e0dd6b24)
+    # ----------------------------------------------------
+    train_features, train_labels = get_train_data()
+    scores = cross_val_score(clf, train_features, train_labels, cv=5)
+    print(scores)
+    print("Accuracy: %0.2f (+/- %0.2f)" % (scores.mean(), scores.std() * 2))
+    # ----------------------------------------------------
