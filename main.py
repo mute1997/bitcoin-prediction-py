@@ -33,9 +33,10 @@ def get_train_data():
     prices = []
     for value in order_book_data['result']['60']:
         prices.append(value[1])
+    print('data size:', len(prices))
 
     # データの生成
-    input_amount = 5
+    input_amount = 10
     for index in range(0, len(prices) - input_amount, input_amount):
         x = prices[index:index+input_amount]
         y = 1 if x[-1] < prices[index+input_amount+1] else 0 # 上がってたら1, 下がってる or 同じだったら0
@@ -55,6 +56,7 @@ if __name__ == '__main__':
                                                         train_labels,
                                                         test_size=0.2,
                                                         random_state=0)
+
     # train_Xとtest_Xの標準化
     train_X = scale_standard(train_X)
     test_X = scale_standard(test_X)
