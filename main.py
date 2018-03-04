@@ -52,13 +52,18 @@ if __name__ == '__main__':
     # これを参考にスコア算出 -> (https://qiita.com/Lewuathe/items/09d07d3ff366e0dd6b24)
     # ----------------------------------------------------
     train_features, train_labels = get_train_data()
+    train_X, test_X, train_y, test_y = train_test_split(train_features,
+                                                        train_labels,
+                                                        test_size=0.2,
+                                                        random_state=0)
 
     # train_Xとtest_Xの標準化
-    train_X = scale_standard(train_features)
+    train_X = scale_standard(train_X)
+    test_X = scale_standard(test_X)
 
     clf = MLPClassifier()
-    clf.fit(train_X, train_labels)
+    clf.fit(train_X, train_y)
 
-    scores = cross_val_score(clf, train_X, train_labels, cv=5)
+    scores = cross_val_score(clf, train_features, train_labels, cv=5)
     print("Scores: ", scores)
     print("Accuracy: %0.2f (+/- %0.2f)" % (scores.mean(), scores.std() * 2))
